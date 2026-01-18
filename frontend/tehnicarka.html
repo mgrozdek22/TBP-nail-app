@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil tehničarke</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+</head>
+
+<body>
+  <header class="topbar">
+    <h2 class="logo">Profil tehničarke</h2>
+    <div class="topbar-right">
+      <button class="btn" onclick="nazad()">Nazad</button>
+      <button class="btn" onclick="odjava()">Odjava</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="card">
+      <h3 id="imeTehnicarke">Učitavanje...</h3>
+      <p class="note" id="metaInfo"></p>
+      <p class="note" id="profilInfo"></p>
+
+      <hr style="margin:12px 0; opacity:0.2;">
+
+<h4 style="margin:0 0 8px 0;">Predloži podatke profila</h4>
+
+<div class="row">
+  <div class="field">
+    <label>Kontakt:</label>
+    <input id="patchKontakt" class="input" type="text" placeholder="npr. 091 123 4567 ili Instagram" />
+  </div>
+
+  <div class="field">
+    <label>Način plaćanja:</label>
+    <input id="patchPlacanje" class="input" type="text" placeholder="npr. gotovina, kartice..." />
+  </div>
+</div>
+
+<br/>
+
+<div class="row">
+  <div class="field">
+    <label>Radi:</label>
+    <select id="patchRadi" class="input">
+      <option value="">-- odaberi --</option>
+      <option value="salon">u salonu</option>
+      <option value="kuci">kod kuće</option>
+      <option value="oboje">oboje</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Min cijena:</label>
+    <input id="patchMin" class="input" type="number" placeholder="npr. 20" />
+  </div>
+
+  <div class="field">
+    <label>Max cijena:</label>
+    <input id="patchMax" class="input" type="number" placeholder="npr. 60" />
+  </div>
+</div>
+
+<br/>
+
+<button class="btn btn-primary" onclick="posaljiPatchProfila()">Pošalji prijedlog</button>
+<p class="note" id="statusPatchProfila"></p>
+
+    </div>
+
+    <div class="card">
+      <h3>Tehnike i oblici</h3>
+
+      <div class="row" style="gap:20px; margin-bottom:14px;">
+  <div style="flex:1;">
+    <h4 style="margin:0 0 8px 0;">Trenutne tehnike</h4>
+    <div id="listaTehnikaTehnicarke" class="mini-list"></div>
+  </div>
+
+  <div style="flex:1;">
+    <h4 style="margin:0 0 8px 0;">Trenutni oblici</h4>
+    <div id="listaOblikaTehnicarke" class="mini-list"></div>
+  </div>
+</div>
+
+
+      <div class="row">
+        <div class="field">
+          <label>Dodaj tehniku (postojeću):</label>
+          <select id="selectTehnika" class="input">
+            <option value="">-- odaberi tehniku --</option>
+          </select>
+          <button class="btn btn-primary" style="margin-top:8px;" onclick="dodajTehniku()">Dodaj tehniku</button>
+        </div>
+
+        <div class="field">
+          <label>Dodaj oblik (postojeći):</label>
+          <select id="selectOblik" class="input">
+            <option value="">-- odaberi oblik --</option>
+          </select>
+          <button class="btn btn-primary" style="margin-top:8px;" onclick="dodajOblik()">Dodaj oblik</button>
+        </div>
+      </div>
+
+      <p class="note" id="statusVeze"></p>
+    </div>
+
+    <div class="card">
+      <h3>Dodaj novu lokaciju</h3>
+      <div style="margin-top:10px;">
+  <h4 style="margin:0 0 8px 0;">Lokacije</h4>
+  <div id="listaLokacijaTehnicarke" class="mini-list"></div>
+</div>
+
+      <div id="mapLokacija" class="map-picker"></div>
+
+      <div style="margin-top:10px;">
+        <button class="btn" onclick="ocistiMarker()">Obriši odabir</button>
+      </div>
+
+      <br/>
+
+      <div class="field">
+        <label>Naziv lokacije:</label>
+        <input id="nazivLokacije" class="input" type="text" placeholder="npr. Centar" />
+      </div>
+
+      <br/>
+
+      <div class="row">
+        <div class="field">
+          <label>Latitude:</label>
+          <input id="lat" class="input" type="number" step="0.000001" />
+        </div>
+        <div class="field">
+          <label>Longitude:</label>
+          <input id="lon" class="input" type="number" step="0.000001" />
+        </div>
+      </div>
+
+      <br/>
+
+      <div class="row">
+        <div class="field">
+          <label>Razdoblje od:</label>
+          <input id="lokOd" class="input" type="datetime-local" />
+        </div>
+        <div class="field">
+          <label>Razdoblje do:</label>
+          <input id="lokDo" class="input" type="datetime-local" />
+        </div>
+      </div>
+
+      <br/>
+      <button class="btn btn-primary" onclick="spremiLokaciju()">Spremi lokaciju</button>
+      <p class="note" id="statusLokacija"></p>
+    </div>
+
+    <div class="card">
+      <h3>Unos dostupnosti</h3>
+      <h4 style="margin:0 0 8px 0;">Postojeći rasporedi dostupnosti</h4>
+<div id="listaDostupnostiTehnicarke" class="mini-list" style="margin-bottom:12px;"></div>
+
+      <div class="row">
+        <div class="field">
+          <label>Radi?</label>
+          <select id="radi" class="input">
+            <option value="true">DA (radi)</option>
+            <option value="false">NE (ne radi)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Napomena (opcionalno):</label>
+          <input id="napomena" class="input" type="text" placeholder="npr. godišnji odmor" />
+        </div>
+      </div>
+
+      <br/>
+
+      <div class="row">
+        <div class="field">
+          <label>Razdoblje od:</label>
+          <input id="dostOd" class="input" type="datetime-local" />
+        </div>
+        <div class="field">
+          <label>Razdoblje do:</label>
+          <input id="dostDo" class="input" type="datetime-local" />
+        </div>
+      </div>
+
+      <br/>
+      <button class="btn btn-primary" onclick="spremiDostupnost()">Spremi dostupnost</button>
+      <p class="note" id="statusDostupnost"></p>
+    </div>
+
+    <div class="card">
+      <h3>Unesi recenziju</h3>
+
+      <div class="row">
+        <div class="field">
+          <label>Tehnika:</label>
+          <select id="recTehnika" class="input">
+            <option value="">-- odaberi --</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Oblik:</label>
+          <select id="recOblik" class="input">
+            <option value="">-- odaberi --</option>
+          </select>
+        </div>
+      </div>
+
+      <br/>
+
+      <div class="row">
+        <div class="field">
+          <label>Ocjena tehničarke (1-5):</label>
+          <input id="ocTehnicarke" class="input" type="number" min="1" max="5" value="5" />
+        </div>
+
+        <div class="field">
+          <label>Ocjena tehnike (1-5):</label>
+          <input id="ocTehnike" class="input" type="number" min="1" max="5" value="5" />
+        </div>
+
+        <div class="field">
+          <label>Ocjena oblika (1-5):</label>
+          <input id="ocOblika" class="input" type="number" min="1" max="5" value="5" />
+        </div>
+      </div>
+
+      <br/>
+
+      <div class="field">
+        <label>Tekst (opcionalno):</label>
+        <textarea id="tekst" class="input" rows="3" placeholder="Upiši dojam..."></textarea>
+      </div>
+
+      <br/>
+      <button class="btn btn-primary" onclick="spremiRecenziju()">Spremi recenziju</button>
+      <p class="note" id="statusRecenzija"></p>
+    </div>
+
+    <div class="card">
+      <h3>Recenzije</h3>
+      <div id="listaRecenzija" class="results"></div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="app.js"></script>
+  <script>
+    const API = window.API;
+
+    const userStr = localStorage.getItem("user");
+    if (!userStr) window.location.href = "login.html";
+    const user = JSON.parse(userStr);
+
+    function odjava() {
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+    function nazad() {
+      window.location.href = "index.html";
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const tehnicarkaId = Number(params.get("id"));
+
+    if (!tehnicarkaId) {
+      alert("Nema ID tehničarke u URL-u.");
+      window.location.href = "index.html";
+    }
+
+    const map = L.map("mapLokacija").setView([45.8150, 15.9819], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    let marker = null;
+    let tehnicarkaTehnike = [];
+let tehnicarkaOblici = [];
+
+    function postaviMarker(lat, lon) {
+      document.getElementById("lat").value = Number(lat).toFixed(6);
+      document.getElementById("lon").value = Number(lon).toFixed(6);
+
+      const latlng = [lat, lon];
+      if (marker) marker.setLatLng(latlng);
+      else marker = L.marker(latlng).addTo(map);
+    }
+
+    map.on("click", (e) => {
+      postaviMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    function ocistiMarker() {
+      if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+      }
+      document.getElementById("lat").value = "";
+      document.getElementById("lon").value = "";
+    }
+
+    async function ucitajTehnicarku() {
+      const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Greška kod učitavanja tehničarke");
+        return;
+      }
+
+      document.getElementById("imeTehnicarke").textContent = data.naziv;
+      document.getElementById("metaInfo").textContent =
+        `Prosječna ocjena: ${data.prosjecna_ocjena}  | Broj recenzija: ${data.broj_recenzija}`;
+
+        const kontakt = data.kontakt || "-";
+const nacin = data.nacin_placanja || "-";
+const radi = data.radi || "-";
+const min = data.min_cijena || "-";
+const max = data.max_cijena || "-";
+
+document.getElementById("profilInfo").innerHTML = `
+  <b>Kontakt:</b> ${kontakt} <br>
+  <b>Plaćanje:</b> ${nacin} <br>
+  <b>Radi:</b> ${radi} <br>
+  <b>Cijene:</b> ${min} – ${max}
+`;
+
+    }
+    function formatDatum(dt) {
+  if (!dt) return "";
+  return new Date(dt).toLocaleString("hr-HR");
+}
+
+async function ucitajLokacijeTehnicarke() {
+  const el = document.getElementById("listaLokacijaTehnicarke");
+  el.innerHTML = `<div class="note">Učitavanje...</div>`;
+
+  const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}/lokacije`);
+  const data = await res.json();
+
+  if (!res.ok) {
+    el.innerHTML = `<div class="note">Greška: ${data.error || "nepoznato"}</div>`;
+    return;
+  }
+
+  if (data.length === 0) {
+    el.innerHTML = `<div class="note">(nema lokacija)</div>`;
+    return;
+  }
+
+  const prikaz = (data || []).filter(l => l.status !== "odbijeno");
+
+if (prikaz.length === 0) {
+  el.innerHTML = `<div class="note">(nema lokacija)</div>`;
+  return;
+}
+
+el.innerHTML = prikaz.map(l => `
+  <div class="mini-item">
+    <div>
+      <div><b>${l.naziv_lokacije}</b></div>
+      <div class="note">${formatDatum(l.od)} → ${formatDatum(l.do)}</div>
+    </div>
+    ${badgeStatus(l.status)}
+  </div>
+`).join("");
+
+}
+
+
+function badgeStatus(status) {
+  if (status === "odobreno") {
+    return `<span class="badge badge-ok">odobreno</span>`;
+  }
+  if (status === "odbijeno") {
+    return `<span class="badge badge-bad">odbijeno</span>`;
+  }
+  return `<span class="badge badge-warn">u provjeri</span>`;
+}
+
+function renderMiniList(containerId, lista) {
+  const el = document.getElementById(containerId);
+
+  const prikaz = (lista || []).filter(x => x.status !== "odbijeno");
+
+  if (prikaz.length === 0) {
+    el.innerHTML = `<div class="note">(nema)</div>`;
+    return;
+  }
+
+  el.innerHTML = prikaz.map(x => `
+    <div class="mini-item">
+      <span>${x.naziv}</span>
+      ${badgeStatus(x.status)}
+    </div>
+  `).join("");
+}
+
+
+async function ucitajTehnikeIOblikeTehnicarke() {
+  const resT = await fetch(`${API}/tehnicarke/${tehnicarkaId}/tehnike`);
+  const dataT = await resT.json();
+  if (resT.ok) tehnicarkaTehnike = dataT;
+  else tehnicarkaTehnike = [];
+
+  const resO = await fetch(`${API}/tehnicarke/${tehnicarkaId}/oblici`);
+  const dataO = await resO.json();
+  if (resO.ok) tehnicarkaOblici = dataO;
+  else tehnicarkaOblici = [];
+
+renderMiniList("listaTehnikaTehnicarke", tehnicarkaTehnike);
+renderMiniList("listaOblikaTehnicarke", tehnicarkaOblici);}
+
+  async function ucitajDropdownTehnikeOblike() {
+  const resT = await fetch(`${API}/tehnike`);
+  const tech = await resT.json();
+
+  const resO = await fetch(`${API}/oblici`);
+  const ob = await resO.json();
+
+const vecImaTehnike = new Set(
+  (tehnicarkaTehnike || [])
+    .filter(x => x.status === "odobreno" || x.status === "u_provjeri")
+    .map(x => Number(x.tehnika_id))
+);
+
+const vecImaOblike = new Set(
+  (tehnicarkaOblici || [])
+    .filter(x => x.status === "odobreno" || x.status === "u_provjeri")
+    .map(x => Number(x.oblik_id))
+);
+
+
+  const selTech = document.getElementById("selectTehnika");
+  const selOb = document.getElementById("selectOblik");
+
+  selTech.innerHTML = `<option value="">-- odaberi tehniku --</option>`;
+  selOb.innerHTML = `<option value="">-- odaberi oblik --</option>`;
+
+  const recT = document.getElementById("recTehnika");
+  const recO = document.getElementById("recOblik");
+  recT.innerHTML = `<option value="">-- odaberi --</option>`;
+  recO.innerHTML = `<option value="">-- odaberi --</option>`;
+
+tech.forEach(t => {
+  const optRec = document.createElement("option");
+  optRec.value = t.tehnika_id;
+  optRec.textContent = t.naziv;
+  recT.appendChild(optRec);
+
+  // ✅ dodaj u dropdown samo ako nije odobreno ni u_provjeri
+  if (!vecImaTehnike.has(Number(t.tehnika_id))) {
+    const opt = document.createElement("option");
+    opt.value = t.tehnika_id;
+    opt.textContent = t.naziv;
+    selTech.appendChild(opt);
+  }
+});
+
+ob.forEach(o => {
+  const optRec = document.createElement("option");
+  optRec.value = o.oblik_id;
+  optRec.textContent = o.naziv;
+  recO.appendChild(optRec);
+
+  // ✅ dodaj u dropdown samo ako nije odobreno ni u_provjeri
+  if (!vecImaOblike.has(Number(o.oblik_id))) {
+    const opt = document.createElement("option");
+    opt.value = o.oblik_id;
+    opt.textContent = o.naziv;
+    selOb.appendChild(opt);
+  }
+});
+
+
+}
+
+    async function dodajTehniku() {
+      const tehnika_id = Number(document.getElementById("selectTehnika").value);
+      const status = document.getElementById("statusVeze");
+      status.textContent = "Veza tehničarka-tehnika dodana (čeka odobrenje moderatora).";
+
+
+
+      if (!tehnika_id) {
+        status.textContent = "Odaberi tehniku.";
+        return;
+      }
+
+      const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}/tehnike`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tehnika_id, uneseno_od: user.korisnik_id })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        status.textContent = data.error || "Greška.";
+        return;
+      }
+
+      status.textContent = "Veza tehničarka-tehnika dodana (čeka odobrenje moderatora).";
+
+            await ucitajTehnikeIOblikeTehnicarke();
+await ucitajDropdownTehnikeOblike();
+    }
+
+    async function dodajOblik() {
+      const oblik_id = Number(document.getElementById("selectOblik").value);
+      const status = document.getElementById("statusVeze");
+      status.textContent = "Veza tehničarka-oblik dodana (čeka odobrenje moderatora).";
+
+
+
+
+      if (!oblik_id) {
+        status.textContent = "Odaberi oblik.";
+        return;
+      }
+
+      const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}/oblici`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oblik_id, uneseno_od: user.korisnik_id })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        status.textContent = data.error || "Greška.";
+        return;
+      }
+
+      status.textContent = "Veza tehničarka-oblik dodana (čeka odobrenje moderatora).";
+
+            await ucitajTehnikeIOblikeTehnicarke();
+await ucitajDropdownTehnikeOblike();
+    }
+
+    async function spremiLokaciju() {
+      const status = document.getElementById("statusLokacija");
+      status.textContent = "";
+
+      const naziv_lokacije = document.getElementById("nazivLokacije").value.trim();
+      const latStr = document.getElementById("lat").value;
+      const lonStr = document.getElementById("lon").value;
+      const lat = Number(latStr);
+      const lon = Number(lonStr);
+      const od = document.getElementById("lokOd").value;
+      const doV = document.getElementById("lokDo").value;
+
+      if (!naziv_lokacije) { status.textContent = "Upiši naziv lokacije."; return; }
+      if (latStr === "" || lonStr === "" || isNaN(lat) || isNaN(lon)) { status.textContent = "Odaberi ili upiši lat/lon."; return; }
+      if (!od || !doV) { status.textContent = "Upiši razdoblje od/do."; return; }
+
+      const res = await fetch(`${API}/lokacije`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tehnicarka_id: tehnicarkaId,
+          naziv_lokacije,
+          lat,
+          lon,
+          od,
+          do: doV,
+          uneseno_od: user.korisnik_id
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        status.textContent = data.error || "Greška.";
+        return;
+      }
+
+      status.textContent = "Lokacija dodana (čeka odobrenje moderatora).";
+    }
+
+    async function spremiDostupnost() {
+      const status = document.getElementById("statusDostupnost");
+      status.textContent = "";
+
+      const radi = document.getElementById("radi").value === "true";
+      const napomena = document.getElementById("napomena").value.trim();
+      const od = document.getElementById("dostOd").value;
+      const doV = document.getElementById("dostDo").value;
+
+      if (!od || !doV) { status.textContent = "Upiši razdoblje od/do."; return; }
+
+      const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}/dostupnosti`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          radi,
+          od,
+          do: doV,
+          napomena: napomena || null,
+          uneseno_od: user.korisnik_id
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        status.textContent = data.error || "Greška.";
+        return;
+      }
+
+      status.textContent = "Dostupnost spremljena (čeka odobrenje moderatora).";
+    }
+
+async function ucitajDostupnostiTehnicarke() {
+  const el = document.getElementById("listaDostupnostiTehnicarke");
+  el.innerHTML = `<div class="note">Učitavanje...</div>`;
+
+  const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}/dostupnosti`);
+  const data = await res.json();
+
+  if (!res.ok) {
+    el.innerHTML = `<div class="note">Greška: ${data.error || "nepoznato"}</div>`;
+    return;
+  }
+
+  if (data.length === 0) {
+    el.innerHTML = `<div class="note">(nema unesenih raspona)</div>`;
+    return;
+  }
+
+  const prikaz = (data || []).filter(d => d.status !== "odbijeno");
+
+if (prikaz.length === 0) {
+  el.innerHTML = `<div class="note">(nema unesenih raspona)</div>`;
+  return;
+}
+
+el.innerHTML = prikaz.map(d => `
+  <div class="mini-item">
+    <div>
+      <div><b>${d.radi ? " Radi" : " Ne radi"}</b></div>
+      <div class="note">${formatDatum(d.od)} → ${formatDatum(d.do)}</div>
+      ${d.napomena ? `<div class="note">Napomena: ${d.napomena}</div>` : ""}
+    </div>
+    ${badgeStatus(d.status)}
+  </div>
+`).join("");
+
+}
+
+    async function spremiRecenziju() {
+      const status = document.getElementById("statusRecenzija");
+      status.textContent = "";
+
+      const tehnika_id = Number(document.getElementById("recTehnika").value);
+      const oblik_id = Number(document.getElementById("recOblik").value);
+
+      const ocjena_tehnicarke = Number(document.getElementById("ocTehnicarke").value);
+      const ocjena_tehnike = Number(document.getElementById("ocTehnike").value);
+      const ocjena_oblika = Number(document.getElementById("ocOblika").value);
+      const tekst = document.getElementById("tekst").value.trim();
+
+      if (!tehnika_id) { status.textContent = "Odaberi tehniku."; return; }
+      if (!oblik_id) { status.textContent = "Odaberi oblik."; return; }
+
+      const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}/recenzije`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          autor_id: user.korisnik_id,
+          tehnika_id,
+          oblik_id,
+          ocjena_tehnicarke,
+          ocjena_tehnike,
+          ocjena_oblika,
+          tekst: tekst || null
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        status.textContent = data.error || "Greška.";
+        return;
+      }
+
+      status.textContent = "Recenzija spremljena (čeka odobrenje moderatora).";
+      document.getElementById("tekst").value = "";
+
+      await ucitajRecenzije();
+    }
+
+    async function ucitajRecenzije() {
+      const container = document.getElementById("listaRecenzija");
+      container.innerHTML = `<div class="card">Učitavanje...</div>`;
+
+      const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}/recenzije?korisnik_id=${user.korisnik_id}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        container.innerHTML = `<div class="card">Greška: ${data.error || "nepoznato"}</div>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        container.innerHTML = `<div class="card">Nema recenzija.</div>`;
+        return;
+      }
+
+  
+
+container.innerHTML = data.map(r => {
+  const korisnoKlasa = r.moj_glas === true ? "btn-selected" : "";
+  const nekorisnoKlasa = r.moj_glas === false ? "btn-selected" : "";
+
+  return `
+    <div class="card">
+      <div><b>Autor:</b> ${r.korisnicko_ime}</div>
+      <div><b>Datum:</b> ${new Date(r.datum).toLocaleString()}</div>
+
+      <div style="margin-top:6px;">
+        <div><b>Tehnika:</b> ${r.naziv_tehnike || "(nepoznato)"}</div>
+        <div><b>Oblik:</b> ${r.naziv_oblika || "(nepoznato)"}</div>
+      </div>
+
+      <div style="margin-top:6px;">
+        <div><b>Ocjena tehničarke:</b> ${r.ocjena_tehnicarke}</div>
+        <div><b>Ocjena tehnike:</b> ${r.ocjena_tehnike}</div>
+        <div><b>Ocjena oblika:</b> ${r.ocjena_oblika}</div>
+      </div>
+
+      <div style="margin-top:6px;"><b>Tekst:</b> ${r.tekst ? r.tekst : "(nema teksta)"}</div>
+
+      <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span><b>Korisno:</b> ${r.helpful_count} | <b>Nekorisno:</b> ${r.not_helpful_count}</span>
+       <button class="btn ${korisnoKlasa}" onclick="glasaj(${r.recenzija_id}, true)">Korisno</button>
+<button class="btn ${nekorisnoKlasa}" onclick="glasaj(${r.recenzija_id}, false)">Nekorisno</button>
+      </div>
+    </div>
+  `;
+}).join("");
+
+
+
+    }
+
+    async function glasaj(recenzija_id, korisno) {
+      const res = await fetch(`${API}/recenzije/${recenzija_id}/glas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          glasao_id: user.korisnik_id,
+          korisno
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Greška kod glasanja");
+        return;
+      }
+
+      ucitajRecenzije();
+    }
+
+   (async () => {
+  setTimeout(() => map.invalidateSize(), 150);
+
+ await ucitajTehnicarku();
+await ucitajLokacijeTehnicarke();
+await ucitajTehnikeIOblikeTehnicarke();
+await ucitajDropdownTehnikeOblike();
+await ucitajRecenzije();
+await ucitajDostupnostiTehnicarke();
+})();
+
+
+
+async function posaljiPatchProfila() {
+  const status = document.getElementById("statusPatchProfila");
+  status.textContent = "";
+
+  const kontakt = document.getElementById("patchKontakt").value.trim();
+  const placanje = document.getElementById("patchPlacanje").value.trim();
+  const radi = document.getElementById("patchRadi").value;
+  const min = document.getElementById("patchMin").value;
+  const max = document.getElementById("patchMax").value;
+
+  // ✅ napravimo patch samo s poljima koja su upisana
+  const patch = {};
+  if (kontakt) patch.kontakt = kontakt;
+  if (placanje) patch.nacin_placanja = placanje;
+  if (radi) patch.radi = radi;
+  if (min !== "") patch.min_cijena = Number(min);
+  if (max !== "") patch.max_cijena = Number(max);
+
+  if (Object.keys(patch).length === 0) {
+    status.textContent = "Upiši barem jedan podatak prije slanja.";
+    return;
+  }
+
+  const res = await fetch(`${API}/tehnicarke/${tehnicarkaId}/profil-prijedlog`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      autor_id: user.korisnik_id,
+      patch
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    status.textContent = data.error || "Greška.";
+    return;
+  }
+
+  status.textContent = "Prijedlog poslan (čeka odobrenje moderatora).";
+
+  // očisti inpute
+  document.getElementById("patchKontakt").value = "";
+  document.getElementById("patchPlacanje").value = "";
+  document.getElementById("patchRadi").value = "";
+  document.getElementById("patchMin").value = "";
+  document.getElementById("patchMax").value = "";
+}
+
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova tehničarka</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <h2 class="logo">Nova tehničarka</h2>
+
+    <div class="topbar-right">
+      <button class="btn" onclick="nazad()">Nazad</button>
+      <button class="btn" onclick="odjava()">Odjava</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="card">
+      <h3>Unesi novu nail tehničarku</h3>
+
+      <label>Ime / naziv:</label><br/>
+      <input id="naziv" class="input" type="text" placeholder="npr. Ana Nails Studio" />
+      <br/><br/>
+
+      <button class="btn btn-primary" onclick="spremi()">Spremi</button>
+
+      <p id="status" class="note"></p>
+    </div>
+  </main>
+<script src="app.js"></script>
+  <script>
+
+    const userStr = localStorage.getItem("user");
+    if (!userStr) window.location.href = "login.html";
+    const user = JSON.parse(userStr);
+
+    function odjava() {
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+
+    function nazad() {
+      window.location.href = "index.html";
+    }
+
+    async function spremi() {
+      const naziv = document.getElementById("naziv").value.trim();
+      const status = document.getElementById("status");
+      status.textContent = "";
+
+      if (!naziv) {
+        status.textContent = "Upiši naziv tehničarke.";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/tehnicarke`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            naziv,
+            uneseno_od: user.korisnik_id
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          status.textContent = data.error || "Greška.";
+          return;
+        }
+
+        status.textContent = "Tehničarka je spremljena i čeka odobrenje moderatora.";
+        document.getElementById("naziv").value = "";
+      } catch (err) {
+        status.textContent = "Greška: " + err.message;
+      }
+    }
+  </script>
+
+</body>
+</html>

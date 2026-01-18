@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nail preporuke</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+</head>
+
+<body>
+  <header class="topbar">
+    <h2 class="logo">Nail preporuke</h2>
+
+    <div class="topbar-right">
+      <span id="prijavljeniKorisnik" class="user-info"></span>
+      <button class="btn" onclick="odjava()">Odjava</button>
+    </div>
+  </header>
+
+  <section class="section">
+    <h3>Pretraga</h3>
+
+    <div class="filters">
+      <div class="field">
+        <label>Radius (m):</label>
+        <input id="radius" class="input" type="number" value="2000" min="100" step="100" />
+      </div>
+
+      <div class="field">
+        <label>Tehnika:</label>
+        <select id="tehnika" class="input">
+          <option value="">-- bez filtera --</option>
+        </select>
+      </div>
+
+      <label>Logika:</label>
+<select id="logikaFilter">
+  <option value="AND">I (mora imati oboje)</option>
+  <option value="OR">ILI (dovoljno je jedno)</option>
+</select>
+
+      <div class="field">
+        <label>Oblik nokta:</label>
+        <select id="oblik" class="input">
+          <option value="">-- bez filtera --</option>
+        </select>
+      </div>
+
+      <div class="checkbox-row">
+        <input id="samo_dostupne" type="checkbox" />
+        <label for="samo_dostupne">Samo trenutno dostupne</label>
+      </div>
+<button class="btn btn-primary" id="btnPretrazi" type="button">Pretraži</button>
+      
+    </div>
+
+    <p class="note">
+      Klik na mapu postavlja centar radijusa.
+    </p>
+  </section>
+
+  <section class="section">
+    <h3>Unosi</h3>
+    <div class="actions">
+      <button class="btn" onclick="window.location.href='nova_tehnicarka.html'">Nova tehničarka</button>
+      <button class="btn" onclick="window.location.href='nova_lokacija.html'">Dodavanje prve lokacije za trehničarke</button>
+      <button class="btn" onclick="window.location.href='nova_tehnika.html'">Nova tehnika</button>
+      <button class="btn" onclick="window.location.href='novi_oblik.html'">Novi oblik</button>
+      <button class="btn btn-primary" onclick="window.location.href='preporuke.html'">
+  Preporuke
+</button>
+    </div>
+  </section>
+
+  <main class="main">
+    <h3>Mapa</h3>
+    <div id="mapa" class="map-main"></div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+
+
+  <script>
+    const userStr = localStorage.getItem("user");
+    if (!userStr) {
+      window.location.href = "login.html";
+    }
+
+    const user = JSON.parse(userStr);
+    document.getElementById("prijavljeniKorisnik").textContent =
+      `Prijavljen: ${user.korisnicko_ime} (${user.uloga_id === 2 ? "moderator" : "korisnik"})`;
+
+    function odjava() {
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+
+    async function ucitajTehnike() {
+      const select = document.getElementById("tehnika");
+      const res = await fetch("/tehnike");
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.log("Greška tehnike:", data.error);
+        return;
+      }
+
+      data.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.tehnika_id;
+        opt.textContent = t.naziv;
+        select.appendChild(opt);
+      });
+    }
+
+    async function ucitajOblike() {
+      const select = document.getElementById("oblik");
+      const res = await fetch("/oblici");
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.log("Greška oblici:", data.error);
+        return;
+      }
+
+      data.forEach(o => {
+        const opt = document.createElement("option");
+        opt.value = o.oblik_id;
+        opt.textContent = o.naziv;
+        select.appendChild(opt);
+      });
+    }
+
+    const defaultCenter = [45.8150, 15.9819];
+    const map = L.map("mapa").setView(defaultCenter, 12);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    let sviMarkeriPodaci = [];
+
+    let markerGroup = L.layerGroup().addTo(map);
+
+    let radiusCircle = null;
+    let centerLatLng = L.latLng(defaultCenter[0], defaultCenter[1]);
+
+    function updateRadiusCircle() {
+      const radius = Number(document.getElementById("radius").value) || 2000;
+
+      if (radiusCircle) {
+        radiusCircle.setLatLng(centerLatLng);
+        radiusCircle.setRadius(radius);
+      } else {
+        radiusCircle = L.circle(centerLatLng, { radius }).addTo(map);
+      }
+    }
+
+    map.on("click", (e) => {
+      centerLatLng = e.latlng;
+      updateRadiusCircle();
+    });
+
+    document.getElementById("radius").addEventListener("input", updateRadiusCircle);
+
+    function iscrtajMarkere(lista) {
+      markerGroup.clearLayers();
+
+      lista.forEach(t => {
+        const marker = L.marker([t.lat, t.lon]).addTo(markerGroup);
+
+        marker.bindPopup(`
+          <b>${t.tehnicarka_naziv}</b><br/>
+          Lokacija: ${t.naziv_lokacije}<br/>
+          Ocjena: ${t.prosjecna_ocjena}  (${t.broj_recenzija})<br/>
+          <a href="tehnicarka.html?id=${t.tehnicarka_id}">Otvori profil</a>
+        `);
+      });
+    }
+
+    async function ucitajMarkere() {
+      const res = await fetch("/mapa/tehnicarke");
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.log("Greška mapa:", data.error);
+        return;
+      }
+
+      sviMarkeriPodaci = data;
+
+      iscrtajMarkere(sviMarkeriPodaci);
+
+      if (sviMarkeriPodaci.length > 0) {
+        const bounds = markerGroup.getBounds();
+        if (bounds.isValid()) map.fitBounds(bounds.pad(0.2));
+      }
+    }
+
+async function prikazi() {
+  const radius = Number(document.getElementById("radius").value) || 2000;
+
+  const tehnika_id = document.getElementById("tehnika").value;
+  const oblik_id = document.getElementById("oblik").value;
+
+  const params = new URLSearchParams();
+
+  if (tehnika_id) params.append("tehnika_id", tehnika_id);
+  if (oblik_id) params.append("oblik_id", oblik_id);
+
+  const samo_dostupne = document.getElementById("samo_dostupne").checked;
+  if (samo_dostupne) params.append("samo_dostupne", "1");
+
+  // ✅ AND / OR (sigurno čak i ako element ne postoji)
+  const logika = document.getElementById("logikaFilter")?.value || "AND";
+  params.append("logika", logika);
+
+  const url = `/mapa/tehnicarke?${params.toString()}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.log("Greška filtriranja:", data.error || data);
+      alert(data.error || "Greška kod dohvaćanja podataka.");
+      return;
+    }
+
+    const filtrirano = data.filter((t) => {
+      const d = map.distance(centerLatLng, L.latLng(t.lat, t.lon));
+      return d <= radius;
+    });
+
+    iscrtajMarkere(filtrirano);
+  } catch (err) {
+    console.log("Fetch greška:", err);
+    alert("Ne mogu dohvatiti podatke s servera.");
+  }
+}
+
+
+   setTimeout(() => {
+  map.invalidateSize();
+  updateRadiusCircle();
+  ucitajMarkere();
+  ucitajTehnike();
+  ucitajOblike();
+  prikazi();
+
+document.getElementById("btnPretrazi").addEventListener("click", prikazi);
+}, 150);
+  </script>
+</body>
+</html>

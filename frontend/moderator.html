@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nail Finder - Moderator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <h2 class="logo">Moderator</h2>
+
+    <div class="topbar-right">
+      <span id="prijavljeniKorisnik" class="user-info"></span>
+      <button class="btn" onclick="odjava()">Odjava</button>
+    </div>
+  </header>
+
+  <section class="section">
+    <h3>Unosi na provjeri</h3>
+
+    <div class="filters">
+      <div class="field">
+        <label>Filtriraj po tipu:</label>
+        <select id="filterTip" class="input" onchange="ucitajPending()">
+          <option value="">-- sve --</option>
+          <option value="nail_tehnicarka">Nail tehničarke</option>
+          <option value="tehnika">Tehnike</option>
+          <option value="oblik_nokta">Oblici</option>
+          <option value="tehnicarka_lokacija">Lokacije</option>
+          <option value="dostupnost_tehnicarke">Dostupnosti</option>
+          <option value="recenzija">Recenzije</option>
+          <option value="tehnicarka_tehnika">Veze (tehničarka-tehnika)</option>
+          <option value="tehnicarka_oblik">Veze (tehničarka-oblik)</option>
+          <option value="prijedlog_profila_tehnicarke">Prijedlog profila</option>
+        </select>
+      </div>
+
+     
+    </div>
+
+    <p class="note">Klikni odobri/odbij za svaki unos.</p>
+  </section>
+
+  <main class="main">
+    <div id="lista" class="results"></div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    const API = window.API;
+    const userStr = localStorage.getItem("user");
+    if (!userStr) window.location.href = "login.html";
+
+    const user = JSON.parse(userStr);
+
+    if (user.uloga_id !== 2) {
+      alert("Nemaš pristup moderator stranici.");
+      window.location.href = "index.html";
+    }
+
+    document.getElementById("prijavljeniKorisnik").textContent =
+      `Prijavljen: ${user.korisnicko_ime} (moderator)`;
+
+    function odjava() {
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+
+    async function ucitajPending() {
+      const lista = document.getElementById("lista");
+      lista.innerHTML = "<div class='card'>Učitavanje...</div>";
+
+      try {
+        const res = await fetch(`${API}/moderacija/pending`);
+        const data = await res.json();
+  
+
+        if (!res.ok) {
+          lista.innerHTML = `<div class="card">Greška: ${data.error || "nepoznato"}</div>`;
+          return;
+        }
+
+        const filterTip = document.getElementById("filterTip").value;
+        const filtrirano = filterTip ? data.filter(x => x.tip === filterTip) : data;
+
+        if (filtrirano.length === 0) {
+          lista.innerHTML = `<div class="card">Nema unosa za provjeru.</div>`;
+          return;
+        }
+
+        lista.innerHTML = filtrirano.map(item => `
+  <div class="card" data-key="${item.tip}-${item.id}">
+            <div><b>Tip:</b> ${item.tip}</div>
+            <div><b>ID:</b> ${item.id}</div>
+           ${item.tehnicarka ? `<div><b>Tehničarka:</b> ${item.tehnicarka}</div>` : ""}
+<div><b>Podaci:</b> ${item.podaci}</div>
+            <div><b>Datum:</b> ${new Date(item.datum_unosa).toLocaleString()}</div>
+
+            <div style="margin-top:10px; display:flex; gap:8px;">
+              <button class="btn btn-primary" onclick="akcija('${item.tip}', ${item.id}, 'odobreno')">Odobri</button>
+              <button class="btn" onclick="akcija('${item.tip}', ${item.id}, 'odbijeno')">Odbij</button>
+            </div>
+          </div>
+        `).join("");
+
+      } catch (err) {
+        lista.innerHTML = `<div class="card">Greška: ${err.message}</div>`;
+      }
+    }
+
+    async function akcija(tip, id, akcija) {
+      try {
+        const res = await fetch(`${API}/moderacija/akcija`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tip,
+            id,
+            akcija,
+            moderator_id: user.korisnik_id
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "Greška kod akcije");
+          return;
+        }
+        ucitajPending();
+
+      } catch (err) {
+        alert("Greška: " + err.message);
+      }
+    }
+
+    ucitajPending();
+  </script>
+
+</body>
+</html>

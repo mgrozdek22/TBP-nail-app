@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preporuke</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <h2 class="logo">Preporuke za tebe</h2>
+
+    <div class="topbar-right">
+      <span id="prijavljeniKorisnik" class="user-info"></span>
+      <button class="btn" onclick="nazad()">Nazad</button>
+      <button class="btn" onclick="odjava()">Odjava</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="card">
+      <h3>Tvoje personalizirane preporuke</h3>
+      <p class="note">
+        Prikazuju se tehničarke koje imaju bolje prosječne ocjene na tehnikama/oblicima koje si ti ocjenjivala.
+      </p>
+    </div>
+
+    <div id="listaPreporuka" class="results"></div>
+  </main>
+
+<script src="app.js"></script>
+  <script>
+
+    const userStr = localStorage.getItem("user");
+    if (!userStr) window.location.href = "login.html";
+    const user = JSON.parse(userStr);
+
+    document.getElementById("prijavljeniKorisnik").textContent =
+      `Prijavljen: ${user.korisnicko_ime}`;
+
+    function odjava() {
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+
+    function nazad() {
+      window.location.href = "index.html";
+    }
+
+    function esc(s) {
+      return String(s || "").replaceAll("&","&amp;")
+        .replaceAll("<","&lt;").replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    async function ucitajPreporuke() {
+      const el = document.getElementById("listaPreporuka");
+      el.innerHTML = `<div class="card">Učitavanje preporuka...</div>`;
+
+      const res = await fetch(`${API}/preporuke/${user.korisnik_id}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        el.innerHTML = `<div class="card">Greška: ${data.error || "nepoznato"}</div>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        el.innerHTML = `
+          <div class="card">
+            Nema preporuka još <br/>
+            <span class="note">Trebaš prvo imati nekoliko odobrenih recenzija (tehnike/oblici).</span>
+          </div>
+        `;
+        return;
+      }
+
+      el.innerHTML = data.map(t => `
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+            <div>
+              <div style="font-weight:700; font-size:18px;">${esc(t.tehnicarka_naziv)}</div>
+              <div class="note">Pogodaka: ${t.broj_pogodaka} | Score: ${t.score}</div>
+            </div>
+
+            <a class="btn btn-primary" href="tehnicarka.html?id=${t.tehnicarka_id}">
+              Otvori profil
+            </a>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div class="note" style="margin-bottom:6px;"><b>Zašto je preporučena:</b></div>
+            ${t.detalji.map(d => `
+              <div class="mini-item" style="display:flex; justify-content:space-between; gap:10px;">
+                <div>
+                  <b>${d.tip === "tehnika" ? "Tehnika" : "Oblik"}:</b> ${esc(d.naziv)}
+                  <div class="note">Tvoj prosjek: ${d.user_avg}  | Njen prosjek: ${d.tech_avg} </div>
+                </div>
+                <span class="badge badge-ok">+${d.delta}</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    ucitajPreporuke();
+  </script>
+</body>
+</html>

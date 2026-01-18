@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova lokacija</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+</head>
+<body>
+
+  <header class="topbar">
+    <h2 class="logo">Nova lokacija</h2>
+
+    <div class="topbar-right">
+      <button class="btn" onclick="nazad()">Nazad</button>
+      <button class="btn" onclick="odjava()">Odjava</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="card">
+      <h3>Unesi lokaciju tehničarke</h3>
+
+      <div class="field">
+        <label>Tehničarka:</label>
+        <select id="tehnicarka" class="input">
+          <option value="">-- odaberi --</option>
+        </select>
+      </div>
+
+      <br/>
+
+      <div class="field">
+        <label>Naziv lokacije:</label>
+        <input id="naziv_lokacije" class="input" type="text" placeholder="npr. Salon Centar" />
+      </div>
+
+      <br/>
+
+      <h3>Odaberi na mapi (klikni) ili upiši ručno</h3>
+
+      <div id="map" class="map-picker"></div>
+
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn" onclick="ocistiMarker()">Obriši odabir</button>
+      </div>
+
+      <br/>
+
+      <div class="row">
+        <div class="field">
+          <label>Latitude (lat):</label>
+          <input id="lat" class="input" type="number" step="0.000001" placeholder="npr. 45.8150" />
+        </div>
+
+        <div class="field">
+          <label>Longitude (lon):</label>
+          <input id="lon" class="input" type="number" step="0.000001" placeholder="npr. 15.9819" />
+        </div>
+      </div>
+
+      <p class="note" style="margin-top:8px;">
+        Savjet: klikni na mapu da se koordinate same popune.
+      </p>
+
+      <br/>
+
+      <div class="row">
+        <div class="field">
+          <label>Razdoblje od:</label>
+          <input id="od" class="input" type="datetime-local" />
+        </div>
+
+        <div class="field">
+          <label>Razdoblje do:</label>
+          <input id="do" class="input" type="datetime-local" />
+        </div>
+      </div>
+
+      <br/>
+
+      <button class="btn btn-primary" onclick="spremi()">Spremi lokaciju</button>
+
+      <p id="status" class="note"></p>
+    </div>
+  </main>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
+<script src="app.js"></script>
+  <script>
+
+    const userStr = localStorage.getItem("user");
+    if (!userStr) window.location.href = "login.html";
+    const user = JSON.parse(userStr);
+
+    function odjava() {
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+
+    function nazad() {
+      window.location.href = "index.html";
+    }
+
+    const defaultLat = 45.8150;
+    const defaultLon = 15.9819;
+
+    const map = L.map("map").setView([defaultLat, defaultLon], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    let marker = null;
+
+    function postaviMarker(lat, lon) {
+
+      document.getElementById("lat").value = Number(lat).toFixed(6);
+      document.getElementById("lon").value = Number(lon).toFixed(6);
+
+      const latlng = [lat, lon];
+      if (marker) {
+        marker.setLatLng(latlng);
+      } else {
+        marker = L.marker(latlng).addTo(map);
+      }
+    }
+
+    map.on("click", (e) => {
+      postaviMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    function mojaLokacija() {
+      const status = document.getElementById("status");
+      status.textContent = "";
+
+      if (!navigator.geolocation) {
+        status.textContent = "Browser ne podržava geolokaciju.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+
+          map.setView([lat, lon], 15);
+          postaviMarker(lat, lon);
+          status.textContent = "Lokacija učitana";
+        },
+        (err) => {
+          status.textContent = "Ne mogu dohvatiti lokaciju (provjeri dozvole).";
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+
+    function ocistiMarker() {
+      if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+      }
+      document.getElementById("lat").value = "";
+      document.getElementById("lon").value = "";
+    }
+
+    async function ucitajTehnicarke() {
+      const select = document.getElementById("tehnicarka");
+      const res = await fetch(`${API}/tehnicarke-bez-odobrene-lokacije`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Greška kod učitavanja tehničarki");
+        return;
+      }
+
+      data.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.tehnicarka_id;
+        opt.textContent = t.naziv;
+        select.appendChild(opt);
+      });
+    }
+
+    async function spremi() {
+      const status = document.getElementById("status");
+      status.textContent = "";
+
+      const tehnicarka_id = document.getElementById("tehnicarka").value;
+      const naziv_lokacije = document.getElementById("naziv_lokacije").value.trim();
+
+      const latStr = document.getElementById("lat").value;
+      const lonStr = document.getElementById("lon").value;
+      const lat = Number(latStr);
+      const lon = Number(lonStr);
+
+      const od = document.getElementById("od").value;
+      const doV = document.getElementById("do").value;
+
+      if (!tehnicarka_id) { status.textContent = "Odaberi tehničarku."; return; }
+      if (!naziv_lokacije) { status.textContent = "Upiši naziv lokacije."; return; }
+      if (latStr === "" || lonStr === "" || isNaN(lat) || isNaN(lon)) { status.textContent = "Odaberi ili upiši ispravan lat/lon."; return; }
+      if (!od || !doV) { status.textContent = "Upiši razdoblje od/do."; return; }
+
+      try {
+        const res = await fetch(`${API}/lokacije`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tehnicarka_id: Number(tehnicarka_id),
+            naziv_lokacije,
+            lat,
+            lon,
+            od,
+            do: doV,
+            uneseno_od: user.korisnik_id
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          status.textContent = data.error || "Greška.";
+          return;
+        }
+
+        status.textContent = "Lokacija spremljena i čeka odobrenje moderatora.";
+
+        document.getElementById("naziv_lokacije").value = "";
+        document.getElementById("od").value = "";
+        document.getElementById("do").value = "";
+
+
+      } catch (err) {
+        status.textContent = "Greška: " + err.message;
+      }
+    }
+
+    ucitajTehnicarke();
+  </script>
+
+</body>
+</html>
