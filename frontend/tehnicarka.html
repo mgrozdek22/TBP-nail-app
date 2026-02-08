@@ -426,7 +426,6 @@ renderMiniList("listaTehnikaTehnicarke", tehnicarkaTehnike);
 renderMiniList("listaOblikaTehnicarke", tehnicarkaOblici);}
 
 async function ucitajDropdownTehnikeOblike() {
-  // 1) dropdownovi za DODAVANJE (globalno odobreno)
   const resT = await fetch(`${API}/tehnike`);
   const tech = await resT.json();
 
@@ -469,7 +468,6 @@ async function ucitajDropdownTehnikeOblike() {
     }
   });
 
-  // 2) dropdownovi za RECENZIJU (samo odobreno za TU tehničarku)
   const resRecT = await fetch(`${API}/tehnicarke/${tehnicarkaId}/odobrene-tehnike`);
   const recTech = await resRecT.json();
 

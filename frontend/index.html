@@ -39,10 +39,11 @@
       </div>
 
       <label>Logika:</label>
-<select id="logikaFilter">
-  <option value="AND">I (mora imati oboje)</option>
-  <option value="OR">ILI (dovoljno je jedno)</option>
-</select>
+
+      <select id="logikaFilter">
+        <option value="AND">I (mora imati oboje)</option>
+        <option value="OR">ILI (dovoljno je jedno)</option>
+      </select>
 
       <div class="field">
         <label>Oblik nokta:</label>
@@ -55,7 +56,8 @@
         <input id="samo_dostupne" type="checkbox" />
         <label for="samo_dostupne">Samo trenutno dostupne</label>
       </div>
-<button class="btn btn-primary" id="btnPretrazi" type="button">Pretraži</button>
+
+      <button class="btn btn-primary" id="btnPretrazi" type="button">Pretraži</button>
       
     </div>
 
@@ -71,9 +73,7 @@
       <button class="btn" onclick="window.location.href='nova_lokacija.html'">Dodavanje prve lokacije za trehničarke</button>
       <button class="btn" onclick="window.location.href='nova_tehnika.html'">Nova tehnika</button>
       <button class="btn" onclick="window.location.href='novi_oblik.html'">Novi oblik</button>
-      <button class="btn btn-primary" onclick="window.location.href='preporuke.html'">
-  Preporuke
-</button>
+      <button class="btn btn-primary" onclick="window.location.href='preporuke.html'">Preporuke</button>
     </div>
   </section>
 
@@ -204,46 +204,46 @@
       }
     }
 
-async function prikazi() {
-  const radius = Number(document.getElementById("radius").value) || 2000;
+    async function prikazi() {
+      const radius = Number(document.getElementById("radius").value) || 2000;
 
-  const tehnika_id = document.getElementById("tehnika").value;
-  const oblik_id = document.getElementById("oblik").value;
+      const tehnika_id = document.getElementById("tehnika").value;
+      const oblik_id = document.getElementById("oblik").value;
 
-  const params = new URLSearchParams();
+      const params = new URLSearchParams();
 
-  if (tehnika_id) params.append("tehnika_id", tehnika_id);
-  if (oblik_id) params.append("oblik_id", oblik_id);
+      if (tehnika_id) params.append("tehnika_id", tehnika_id);
+      if (oblik_id) params.append("oblik_id", oblik_id);
 
-  const samo_dostupne = document.getElementById("samo_dostupne").checked;
-  if (samo_dostupne) params.append("samo_dostupne", "1");
+      const samo_dostupne = document.getElementById("samo_dostupne").checked;
+      if (samo_dostupne) params.append("samo_dostupne", "1");
 
-  const logika = document.getElementById("logikaFilter")?.value || "AND";
-  params.append("logika", logika);
+      const logika = document.getElementById("logikaFilter")?.value || "AND";
+      params.append("logika", logika);
 
-  const url = `/mapa/tehnicarke?${params.toString()}`;
+      const url = `/mapa/tehnicarke?${params.toString()}`;
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
 
-    if (!res.ok) {
-      console.log("Greška filtriranja:", data.error || data);
-      alert(data.error || "Greška kod dohvaćanja podataka.");
-      return;
+        if (!res.ok) {
+          console.log("Greška filtriranja:", data.error || data);
+          alert(data.error || "Greška kod dohvaćanja podataka.");
+          return;
+        }
+
+        const filtrirano = data.filter((t) => {
+          const d = map.distance(centerLatLng, L.latLng(t.lat, t.lon));
+          return d <= radius;
+        });
+
+        iscrtajMarkere(filtrirano);
+      } catch (err) {
+        console.log("Fetch greška:", err);
+        alert("Ne mogu dohvatiti podatke s servera.");
+      }
     }
-
-    const filtrirano = data.filter((t) => {
-      const d = map.distance(centerLatLng, L.latLng(t.lat, t.lon));
-      return d <= radius;
-    });
-
-    iscrtajMarkere(filtrirano);
-  } catch (err) {
-    console.log("Fetch greška:", err);
-    alert("Ne mogu dohvatiti podatke s servera.");
-  }
-}
 
 
    setTimeout(() => {
@@ -254,8 +254,9 @@ async function prikazi() {
   ucitajOblike();
   prikazi();
 
-document.getElementById("btnPretrazi").addEventListener("click", prikazi);
-}, 150);
+  document.getElementById("btnPretrazi").addEventListener("click", prikazi);
+  }, 150);
+
   </script>
 </body>
 </html>
